@@ -42,9 +42,22 @@ class GridWindow(QMainWindow):
 
         # Initialize fluidsynth
         self.fs = fluidsynth.Synth()
-        self.fs.start(driver="alsa")  # Use 'alsa' for Linux, 'coreaudio' for macOS, 'dsound' for Windows
-        self.sfid = self.fs.sfload("path/to/your/soundfont.sf2")  # Replace with the path to your SoundFont
-        self.fs.program_select(0, self.sfid, 0, 0)  # Select the first instrument (usually a piano)
+        self.fs.start(driver="alsa")  # Use 'alsa' for Linux
+
+        # Load SoundFont file with error handling
+        try:
+            soundfont_path = "/home/theo/Ukulele soundfiles/Soundfonts/Ukulele_little-scale.sf2"
+            self.sfid = self.fs.sfload(soundfont_path)
+            if self.sfid == -1:
+                raise FileNotFoundError(f"SoundFont file not found or could not be loaded: {soundfont_path}")
+            self.fs.program_select(0, self.sfid, 0, 0)  # Select the first instrument
+        except Exception as e:
+            self.sfid = None
+            print(f"Error loading SoundFont: {e}")
+
+        # Volume control
+        self.volume = 100  # Default volume (0-127, MIDI standard)
+        self.update_volume()
 
         # Info box for messages
         self.info_box = QLabel("Messages will appear here.", self)
@@ -62,6 +75,17 @@ class GridWindow(QMainWindow):
         self.record_button.setGeometry(600, 450, 150, 50)  # Positioned to the right of the info box
         self.record_button.setFont(QFont("Arial", 12))
         self.record_button.clicked.connect(self.toggle_recording)
+
+        # Volume buttons
+        self.volume_up_button = QPushButton("Volume +", self)
+        self.volume_up_button.setGeometry(50, 520, 150, 50)  # Positioned below the play button
+        self.volume_up_button.setFont(QFont("Arial", 12))
+        self.volume_up_button.clicked.connect(self.increase_volume)
+
+        self.volume_down_button = QPushButton("Volume -", self)
+        self.volume_down_button.setGeometry(600, 520, 150, 50)  # Positioned below the record button
+        self.volume_down_button.setFont(QFont("Arial", 12))
+        self.volume_down_button.clicked.connect(self.decrease_volume)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -132,11 +156,15 @@ class GridWindow(QMainWindow):
                     timestamp = current_time - self.recording_start_time
                     self.recorded_sequence.append((clicked_cell, timestamp))
 
-                # Set a timer to remove the highlight after 1 seconds
+                # Set a timer to remove the highlight after 1 second
                 QTimer.singleShot(1000, lambda: self.remove_cell(clicked_cell))
                 self.update()  # Redraw the grid
 
     def play_note(self, note):
+        if self.sfid is None:
+            self.info_box.setText("SoundFont not loaded. Cannot play note.")
+            return
+
         # Map note names to MIDI note numbers
         note_to_midi = {
             "C4": 60, "C#4": 61, "D4": 62, "D#4": 63, "E4": 64, "F4": 65, "F#4": 66, "G4": 67,
@@ -144,7 +172,7 @@ class GridWindow(QMainWindow):
             "E5": 76
         }
         midi_note = note_to_midi.get(note, 60)  # Default to C4 if note not found
-        self.fs.noteon(0, midi_note, 100)  # Play the note
+        self.fs.noteon(0, midi_note, self.volume)  # Play the note with current volume
         QTimer.singleShot(500, lambda: self.fs.noteoff(0, midi_note))  # Stop the note after 500ms
 
     def remove_cell(self, cell):
@@ -184,6 +212,12 @@ class GridWindow(QMainWindow):
                     self.clicked_cells.append(cell)
                     QTimer.singleShot(5000, lambda c=cell: self.remove_cell(c))
                     self.info_box.setText(f"Playback: Clicked cell {cell} at {elapsed_time}ms")
+                    
+                    # Play the note corresponding to the clicked cell
+                    row, col = cell
+                    note = self.ukulele_notes[row][col]
+                    self.play_note(note)
+                    
                     self.current_playback_index += 1
                 else:
                     break  # No more events to process now
@@ -220,6 +254,23 @@ class GridWindow(QMainWindow):
     def clear_recording(self):
         self.recorded_sequence = []  # Clear the recorded sequence
         self.info_box.setText("Recording cleared.")
+
+    def increase_volume(self):
+        """Increase volume by 10, capped at 127."""
+        self.volume = min(self.volume + 10, 127)
+        self.update_volume()
+        self.info_box.setText(f"Volume increased to {self.volume}")
+
+    def decrease_volume(self):
+        """Decrease volume by 10, capped at 0."""
+        self.volume = max(self.volume - 10, 0)
+        self.update_volume()
+        self.info_box.setText(f"Volume decreased to {self.volume}")
+
+    def update_volume(self):
+        """Update the volume in fluidsynth."""
+        if self.sfid is not None:
+            self.fs.cc(0, 7, self.volume)  # MIDI CC 7 is the volume controller
 
 
 def main():
