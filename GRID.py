@@ -1,8 +1,8 @@
 import sys
 import fluidsynth
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel
-from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QFont
-from PyQt5.QtCore import Qt, QTimer, QDateTime
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel
+from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QFont
+from PySide6.QtCore import Qt, QTimer, QDateTime
 
 
 class GridWindow(QMainWindow):
@@ -134,9 +134,9 @@ class GridWindow(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             # Calculate the clicked cell
-            x, y = event.x(), event.y()
-            col = x // self.cell_size
-            row = (y - 20) // self.cell_size  # Adjust for the top margin
+            x, y = event.position().x(), event.position().y()  # Changed for PySide6
+            col = int(x // self.cell_size)
+            row = int((y - 20) // self.cell_size)  # Adjust for the top margin
 
             # Ensure the click is within bounds (first 4 rows)
             if 0 <= row < 4 and 0 <= col < self.columns:
@@ -277,8 +277,7 @@ def main():
     app = QApplication(sys.argv)
     window = GridWindow()
     window.show()
-    sys.exit(app.exec_())
-
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()
