@@ -1,19 +1,16 @@
 import sys
 import fluidsynth
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout
 from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QFont
 from PySide6.QtCore import Qt, QTimer, QDateTime
 
-class GridWindow(QMainWindow):
+class GridWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("8x8 Ukulele Grid with Playback and Controls")
         self.showMaximized()  # Start maximized
 
-        # Central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+        main_layout = QVBoxLayout(self)
 
         # Grid parameters
         self.rows = 4  # 4 rows for the ukulele notes
