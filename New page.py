@@ -12,6 +12,9 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
 pyautogui.FAILSAFE = False
+
+
+
 # DwellDetector Class
 class DwellDetector():
     def __init__(self, minimumDelayInSeconds, rangeInPixels):
@@ -433,31 +436,31 @@ class PupilPointerApp(QApplication):
 class GridWindowPageTwo(QMainWindow):
     def __init__(self):
         super().__init__()
-        
         self.setWindowTitle("8x8 Ukulele Grid with Playback and Controls")
-        self.setGeometry(100, 100, 800, 800)  # Adjusted height for layout
+        self.showMaximized()  # Start maximized
 
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        
+        main_layout = QVBoxLayout(central_widget)
 
         # Grid parameters
         self.rows = 4  # 4 rows for the ukulele notes
         self.columns = 8  # 8 columns
-        self.cell_size = self.width() // self.columns  # Size of each grid cell
+        self.cell_size = 100  # Fixed size of each grid cell
         self.clicked_cells = []  # Store clicked cells as (row, column)
         self.recorded_sequence = []  # Store recorded sequence of clicks (with timestamps)
         self.recording_start_time = 0  # Track when recording starts for relative timestamps
 
-    # Playback controls
+        # Playback controls
         self.is_playing = False
         self.is_recording = False
         self.playback_progress = 0  # Progress for the playback bar
         self.playback_timer = QTimer()
         self.playback_timer.timeout.connect(self.update_playback)
         self.playback_start_time = 0  # Track when playback starts
-        self.current_playback_index = 0  # Track current event during playback    
+        self.current_playback_index = 0  # Track current event during playback
+        
 
         # Notes for each string and fret
         self.ukulele_notes = [
@@ -488,42 +491,58 @@ class GridWindowPageTwo(QMainWindow):
 
         # Info box for messages
         self.info_box = QLabel("Messages will appear here.", self)
-        self.info_box.setGeometry(250, 450, 300, 50)  # Positioned in the middle
         self.info_box.setStyleSheet("border: 1px solid black; padding: 10px; font-size: 14px;")
         self.info_box.setFont(QFont("Arial", 12))
 
         # Buttons
         self.play_button = QPushButton("Play", self)
-        self.play_button.setGeometry(50, 450, 150, 50)  # Positioned to the left of the info box
         self.play_button.setFont(QFont("Arial", 12))
+        self.play_button.setFixedSize(200, 60)
         self.play_button.clicked.connect(self.toggle_playback)
 
         self.record_button = QPushButton("Record", self)
-        self.record_button.setGeometry(600, 450, 150, 50)  # Positioned to the right of the info box
         self.record_button.setFont(QFont("Arial", 12))
+        self.record_button.setFixedSize(200, 60)
         self.record_button.clicked.connect(self.toggle_recording)
 
-        # Volume buttons
         self.volume_up_button = QPushButton("Volume +", self)
-        self.volume_up_button.setGeometry(50, 520, 150, 50)  # Positioned below the play button
         self.volume_up_button.setFont(QFont("Arial", 12))
+        self.volume_up_button.setFixedSize(200, 60)
         self.volume_up_button.clicked.connect(self.increase_volume)
 
         self.volume_down_button = QPushButton("Volume -", self)
-        self.volume_down_button.setGeometry(600, 520, 150, 50)  # Positioned below the record button
         self.volume_down_button.setFont(QFont("Arial", 12))
+        self.volume_down_button.setFixedSize(200, 60)
         self.volume_down_button.clicked.connect(self.decrease_volume)
+
+        # Layout for buttons
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.play_button)
+        button_layout.addWidget(self.record_button)
+        button_layout.addWidget(self.volume_up_button)
+        button_layout.addWidget(self.volume_down_button)
+        button_layout.addStretch()  # Add stretch to align buttons to the left
+
+        # Add widgets to main layout
+        main_layout.addWidget(self.info_box)
+        main_layout.addLayout(button_layout)
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
+        # Calculate the starting position of the grid to center it
+        grid_width = self.columns * self.cell_size
+        grid_height = self.rows * self.cell_size
+        grid_x_offset = (self.width() - grid_width) // 2
+        grid_y_offset = (self.height() - grid_height) // 2
+
         # Draw the 4x8 grid for notes
         painter.setPen(QPen(Qt.black, 2))
         for row in range(4):  # First 4 rows for the ukulele notes
             for col in range(self.columns):
-                x = col * self.cell_size
-                y = row * self.cell_size + 20  # Small offset for the top margin
+                x = col * self.cell_size + grid_x_offset
+                y = row * self.cell_size + grid_y_offset
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
                 # Draw note labels in each cell
@@ -538,18 +557,18 @@ class GridWindowPageTwo(QMainWindow):
         painter.setBrush(QBrush(QColor(255, 0, 0, 128)))  # Semi-transparent red
         for cell in self.clicked_cells:
             row, col = cell
-            x = col * self.cell_size
-            y = row * self.cell_size + 20  # Offset for top margin
+            x = col * self.cell_size + grid_x_offset
+            y = row * self.cell_size + grid_y_offset
             painter.drawRect(x, y, self.cell_size, self.cell_size)
 
         # Draw the playback bar at the bottom
-        playback_y = 500  # Positioned closer to the grid
-        playback_width = self.width() - 100
-        playback_x = 50
-        playback_height = 20
+        playback_y = self.height() - 250  # Position in relation to the bottom of the window
+        playback_width = self.width() - 500  # Full width of the window
+        playback_x = 255 # Position in relation to the left of the window
+        playback_height = 20  # Fixed height of the playback bar
 
         # Background of playback bar
-        painter.setBrush(QBrush(QColor(200, 200, 200)))
+        painter.setBrush(QBrush(QColor(200, 200, 200))) # Light gray
         painter.drawRect(playback_x, playback_y, playback_width, playback_height)
 
         # Playback progress
@@ -560,10 +579,16 @@ class GridWindowPageTwo(QMainWindow):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            # Calculate the starting position of the grid to center it
+            grid_width = self.columns * self.cell_size
+            grid_height = self.rows * self.cell_size
+            grid_x_offset = (self.width() - grid_width) // 2
+            grid_y_offset = (self.height() - grid_height) // 2
+
             # Calculate the clicked cell
-            x, y = event.position().x(), event.position().y()  # Changed for PySide6
+            x, y = event.position().x() - grid_x_offset, event.position().y() - grid_y_offset
             col = int(x // self.cell_size)
-            row = int((y - 20) // self.cell_size)  # Adjust for the top margin
+            row = int(y // self.cell_size)
 
             # Ensure the click is within bounds (first 4 rows)
             if 0 <= row < 4 and 0 <= col < self.columns:
@@ -698,6 +723,7 @@ class GridWindowPageTwo(QMainWindow):
         """Update the volume in fluidsynth."""
         if self.sfid is not None:
             self.fs.cc(0, 7, self.volume)  # MIDI CC 7 is the volume controller
+    from PyQt5.QtCore import QPoint
 
 
 def main():
