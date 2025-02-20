@@ -207,16 +207,16 @@ class UkuleleWidget(QWidget):
             self.update()  # Redraw the window
     
     def play_note(self, note):
-        if self.sfid is not None:
+        if self.sfid is None:
             self.info_box.setText("SoundFont not loaded. Cannot play note.")
             return
 
-            # Map note to MIDI note number
+        # Map note to MIDI note number
         note_map = {
             "C4": 60, "C#4": 61, "D4": 62, "D#4": 63, "E4": 64, "F4": 65, "F#4": 66, "G4": 67, "G#4": 68, "A4": 69, "A#4": 70, "B4": 71,
             "C5": 72, "C#5": 73, "D5": 74, "D#5": 75, "E5": 76, "F5": 77, "F#5": 78, "G5": 79, "G#5": 80, "A5": 81, "A#5": 82, "B5": 83
         }        
-        midi_note = note_map.get(note,60)
+        midi_note = note_map.get(note, 60)
         self.fs.noteon(0, midi_note, 127)  # Play the note with full velocity
         QTimer.singleShot(500, lambda: self.fs.noteoff(0, midi_note))  # Stop the note after 500ms
         
@@ -252,19 +252,40 @@ class UkuleleWidget(QWidget):
         print("Playback started")
 
     def update_playback(self):
-        if self.is_playing and self.current_playback_index < len(self.recorded_sequence):
-            point, timestamp = self.recorded_sequence[self.current_playback_index]
-            current_time = QDateTime.currentMSecsSinceEpoch() - self.playback_start_time
+        if self.is_playing and self.recorded_sequence:
+            current_time = QDateTime.currentDateTime().toMSecsSinceEpoch()
+            elapsed_time = current_time - self.playback_start_time
 
-            if current_time >= timestamp:
-                self.clicked_points.append(point)
-                self.current_playback_index += 1
-                self.update()  # Redraw the window
+            # Process all events that should have been triggered by now
+            while self.current_playback_index < len(self.recorded_sequence):
+                point, timestamp = self.recorded_sequence[self.current_playback_index]
+                if elapsed_time >= timestamp:
+                    self.clicked_points.append(point)
+                    QTimer.singleShot(5000, lambda p=point: self.remove_point(p))
+                    self.info_box.setText(f"Playback: Clicked point {point} at {elapsed_time}ms")
+                    
+                    # Determine which string and fret was clicked
+                    string_index = self.get_string_index(point)
+                    if string_index is not None:
+                        fret_index = self.get_fret_index(point, string_index)
+                        if fret_index is not None:
+                            note = self.ukulele_notes[string_index][fret_index]
+                            self.play_note(note)
+                    
+                    self.current_playback_index += 1
+                else:
+                    break  # No more events to process now
 
-        if self.current_playback_index >= len(self.recorded_sequence):
-            self.stop_playback()
-            self.info_box.setText("Playback finished")
-            print("Playback finished")
+            # Update playback progress
+            total_duration = self.recorded_sequence[-1][1] if self.recorded_sequence else 1
+            if total_duration == 0:
+                total_duration = 1  # Prevent division by zero
+            self.playback_progress = min(int((elapsed_time / total_duration) * 100), 100)
+            self.update()
+
+            # Check if playback is finished
+            if self.current_playback_index >= len(self.recorded_sequence):
+                self.stop_playback()
 
     def stop_playback(self):
         self.is_playing = False
@@ -273,10 +294,14 @@ class UkuleleWidget(QWidget):
         print("Playback stopped")
 
     def toggle_recording(self):
+        self.is_recording = not self.is_recording
         if self.is_recording:
-            self.stop_recording()
+            self.recording_start_time = QDateTime.currentDateTime().toMSecsSinceEpoch()
+            self.recorded_sequence = []  # Clear previous recording
+            self.info_box.setText("Recording started.")
         else:
-            self.start_recording()
+            self.info_box.setText("Recording stopped.")
+        self.record_button.setText("Stop Recording" if self.is_recording else "Record")
 
     def clear_recording(self):
         self.recorded_sequence = []  # Clear the recorded sequence
