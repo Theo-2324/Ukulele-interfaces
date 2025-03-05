@@ -97,7 +97,7 @@ class TagWindow(QWidget):
 
         self.tagSizeInput = QSpinBox()
         self.tagSizeInput.setRange(10, 512) # Adjust the range of the tag size
-        self.tagSizeInput.setValue(256) # Adjust the tag size
+        self.tagSizeInput.setValue(150) # Adjust the tag size
         self.tagSizeInput.valueChanged.connect(self.onTagSizeChanged)
 
         self.tagBrightnessInput = QSpinBox()
@@ -160,25 +160,24 @@ class TagWindow(QWidget):
             # Scale the background image to fit the widget size
             self.background_image = self.background_image.scaled(self.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-        # Define fretboard coordinates
-        self.top_left = QPointF(250, 170)
-        self.top_right = QPointF(1735,170)
-        self.bottom_right = QPointF(1735,735)
-        self.bottom_left = QPointF(250,735)
+        # Define fretboard coordinates (x,y)
+        self.top_left = QPointF(195, 170)
+        self.top_right = QPointF(1718,170)
+        self.bottom_right = QPointF(1718,940)
+        self.bottom_left = QPointF(195,940)
         
-        # Define string start points (from top to bottom)
+        # Optional offsets from the top and bottom
+        self.offset = 120  # Adjust this value to offset of the first and last strings from the top and bottom of the fretboard
+
+        # Define string start points 
+        fretboard_height = (self.bottom_left.y() - self.offset) - (self.top_left.y() + self.offset)
+        string_spacing = fretboard_height / (self.strings - 1)
         self.string_start_points = [
-            QPointF(250, 235),  # First string
-            QPointF(250, 380),  # Second string
-            QPointF(250, 525),  # Third string
-            QPointF(250, 670)   # Fourth string
+            QPointF(self.top_left.x()+3, self.top_left.y() + self.offset + i * string_spacing) for i in range(self.strings) # +3 is there for cosmetic reasons ans without strings bleed over the fretboard
         ]
         # Define string end points (from top to bottom)
         self.string_end_points = [
-            QPointF(1735, 235),  # First string
-            QPointF(1735, 380),  # Second string
-            QPointF(1735, 525),  # Third string
-            QPointF(1735, 670)   # Fourth string
+            QPointF(self.top_right.x()-3, self.top_left.y() + self.offset + i * string_spacing) for i in range(self.strings)
         ]
 
         # Playback controls
@@ -221,7 +220,7 @@ class TagWindow(QWidget):
         self.info_box = QLabel("Messages will appear here.", self) # Set initial message upon launch
         self.info_box.setStyleSheet("border: 1px solid black; padding: 10px; font-size: 14px;") # Set info box border and padding
         self.info_box.setFont(QFont("Arial", 12)) # Set font style and size for info box
-        self.info_box.setGeometry(800, 900, 300, 50)  # Set position and size (x, y, width, height)
+        self.info_box.setGeometry(800, 120, 300, 50)  # Set position and size (x, y, width, height)
 
         # Buttons
         self.play_button = QPushButton("Play", self)
@@ -313,8 +312,7 @@ class TagWindow(QWidget):
 
             painter.drawPixmap(cornerRect, self.pixmaps[cornerIdx])
             painter.fillRect(cornerRect, QColor(0, 0, 0, 255-self.tagBrightnessInput.value()))
-
-     # Manually define the coordinates for the fretboard (trapezoid shape)
+        # define the coordinates for the fretboard (trapezoid shape)
         top_left = self.top_left
         top_right = self.top_right
         bottom_right = self.bottom_right
@@ -340,7 +338,7 @@ class TagWindow(QWidget):
             )
 
         # Draw strings (with custom start and end points)
-        painter.setPen(QPen(Qt.lightGray, 7))  # Adjust the thickness and color of the strings
+        painter.setPen(QPen(Qt.lightGray, 10))  # Adjust the thickness and color of the strings
         for i in range(self.strings):
             # Start point (custom for each string)
             start_point = self.string_start_points[i]
@@ -357,7 +355,7 @@ class TagWindow(QWidget):
             painter.drawPoint(point)
 
         # Draw the playback bar at the bottom
-        playback_y = self.height() - 250  # Position in relation to the bottom of the window
+        playback_y = self.height() - 100  # Position in relation to the bottom of the window
         playback_width = self.width() - 500  # Full width of the window
         playback_x = 255 # Position in relation to the left of the window
         playback_height = 20  # Fixed height of the playback bar
@@ -371,6 +369,27 @@ class TagWindow(QWidget):
             progress_width = int((self.playback_progress / 100) * playback_width)
             painter.setBrush(QBrush(QColor(0, 255, 0)))  # Green for progress
             painter.drawRect(playback_x, playback_y, progress_width, playback_height)
+
+        # Draw fretboard markers (dots)
+        marker_frets = [3, 5, 7, 10, 12]
+        marker_radius = 10
+        for fret in marker_frets:
+            # Calculate the center of the fret box
+            x_left = top_left.x() + (top_right.x() - top_left.x()) * ((fret - 0.5) / frets)
+            x_right = bottom_left.x() + (bottom_right.x() - bottom_left.x()) * ((fret - 0.5) / frets)
+            x_center = (x_left + x_right) / 2
+            y_center = (top_left.y() + bottom_left.y()) / 2
+
+            if fret == 12:
+                # Draw double dot marker at the 12th fret
+                painter.setBrush(QBrush(Qt.white))
+                painter.drawEllipse(QPointF(x_center, y_center - 180), marker_radius, marker_radius)
+                painter.drawEllipse(QPointF(x_center, y_center + 180), marker_radius, marker_radius)
+            else:
+                # Draw single dot marker
+                painter.setBrush(QBrush(Qt.white))
+                painter.drawEllipse(QPointF(x_center, y_center), marker_radius, marker_radius)
+            
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -443,7 +462,6 @@ class TagWindow(QWidget):
             if not self.recorded_sequence:
                 self.info_box.setText("No recorded sequence to play.")
                 return
-
             self.is_playing = True
             self.play_button.setText("Stop")
             self.playback_progress = 0  # Reset progress
@@ -472,8 +490,7 @@ class TagWindow(QWidget):
                 if elapsed_time >= timestamp:
                     self.clicked_points.append(point)
                     QTimer.singleShot(5000, lambda p=point: self.remove_point(p))
-                    
-                    
+
                     # Determine which string and fret was clicked
                     string_index = self.get_string_index(point)
                     if string_index is not None:
@@ -481,8 +498,12 @@ class TagWindow(QWidget):
                         if fret_index is not None:
                             note = self.ukulele_notes[string_index][fret_index]
                             self.play_note(note)
-                    self.info_box.setText(f"Clicked Note: {note}")
-                    
+                            self.info_box.setText(f"Clicked Note: {note}")
+                        else:
+                            self.info_box.setText("Clicked but no note produced.")
+                    else:
+                        self.info_box.setText("Clicked but no note produced.")
+
                     self.current_playback_index += 1
                 else:
                     break  # No more events to process now
@@ -500,9 +521,11 @@ class TagWindow(QWidget):
 
     def stop_playback(self):
         self.is_playing = False
+        self.play_button.setText("Play")
         self.playback_timer.stop()
+        self.playback_progress = 0
         self.info_box.setText("Playback stopped")
-        print("Playback stopped")
+        self.update()
 
     def toggle_recording(self):
         self.is_recording = not self.is_recording
@@ -703,7 +726,7 @@ class PupilPointerApp(QApplication):
 
     def exec(self):
         self.tagWindow.setStatus('Looking for a device...')
-        self.tagWindow.showMaximized()
+        self.tagWindow.showFullScreen()
         QTimer.singleShot(1000, self.start)
         super().exec()
         if self.device is not None:
