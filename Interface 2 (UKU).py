@@ -102,7 +102,7 @@ class TagWindow(QWidget):
 
         self.tagBrightnessInput = QSpinBox()
         self.tagBrightnessInput.setRange(0, 255) # Adjust the range of the tag brightness
-        self.tagBrightnessInput.setValue(128) # 
+        self.tagBrightnessInput.setValue(255) # 
         self.tagBrightnessInput.valueChanged.connect(lambda _: self.repaint())
 
         self.smoothingInput = QDoubleSpinBox()
@@ -112,7 +112,7 @@ class TagWindow(QWidget):
 
         self.dwellRadiusInput = QSpinBox()
         self.dwellRadiusInput.setRange(0, 512)
-        self.dwellRadiusInput.setValue(25)
+        self.dwellRadiusInput.setValue(15)
         self.dwellRadiusInput.valueChanged.connect(self.dwellRadiusChanged.emit)
 
         self.dwellTimeInput = QDoubleSpinBox()
@@ -121,7 +121,7 @@ class TagWindow(QWidget):
         self.dwellTimeInput.valueChanged.connect(self.dwellTimeChanged.emit)
 
         self.mouseEnabledInput = QCheckBox('Mouse Control')
-        self.mouseEnabledInput.setChecked(False)
+        self.mouseEnabledInput.setChecked(True)
         self.mouseEnabledInput.toggled.connect(self.mouseEnableChanged.emit)
 
         
@@ -203,7 +203,7 @@ class TagWindow(QWidget):
 
         # Load SoundFont file with error handling
         try:
-            soundfont_path = "/home/theo/Ukulele soundfiles/Soundfonts/Ukulele_little-scale.sf2"
+            soundfont_path = "/home/emanuel/Documents/ROS2_Workspaces/TheosDissertation/SoundFonts/UKU-SF.sf2"
             self.sfid = self.fs.sfload(soundfont_path)
             if self.sfid == -1:
                 raise Exception("Failed to load SoundFont")
@@ -299,11 +299,11 @@ class TagWindow(QWidget):
 
         if self.settingsVisible:
             if self.clicked:
-                painter.setBrush(Qt.red)
+                painter.setBrush(Qt.white)
             else:
                 painter.setBrush(Qt.white)
 
-            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())
+            
 
         for cornerIdx in range(4):
             cornerRect = self.getCornerRect(cornerIdx)
@@ -338,7 +338,7 @@ class TagWindow(QWidget):
             )
 
         # Draw strings (with custom start and end points)
-        painter.setPen(QPen(Qt.lightGray, 10))  # Adjust the thickness and color of the strings
+        painter.setPen(QPen(Qt.lightGray, 20))  # Adjust the thickness and color of the strings
         for i in range(self.strings):
             # Start point (custom for each string)
             start_point = self.string_start_points[i]
@@ -390,6 +390,7 @@ class TagWindow(QWidget):
                 painter.setBrush(QBrush(Qt.white))
                 painter.drawEllipse(QPointF(x_center, y_center), marker_radius, marker_radius)
             
+            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -626,7 +627,7 @@ class PupilPointerApp(QApplication):
         super().__init__()
 
         self.setApplicationDisplayName('Pupil Pointer')
-        self.mouseEnabled = False
+        self.mouseEnabled = True
 
         self.tagWindow = TagWindow()
 
