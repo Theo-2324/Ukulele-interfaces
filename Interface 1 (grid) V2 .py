@@ -106,17 +106,17 @@ class TagWindow(QWidget):# Main window for the application
 
         self.smoothingInput = QDoubleSpinBox()
         self.smoothingInput.setRange(0, 1.0)
-        self.smoothingInput.setValue(0.8) #set smoothing value here
+        self.smoothingInput.setValue(1) #set smoothing value here
         self.smoothingInput.valueChanged.connect(self.smoothingChanged.emit)
 
         self.dwellRadiusInput = QSpinBox()
         self.dwellRadiusInput.setRange(0, 512)
-        self.dwellRadiusInput.setValue(25) #set dwell radius here
+        self.dwellRadiusInput.setValue(35) #set dwell radius here
         self.dwellRadiusInput.valueChanged.connect(self.dwellRadiusChanged.emit)
 
         self.dwellTimeInput = QDoubleSpinBox()
         self.dwellTimeInput.setRange(0, 20)
-        self.dwellTimeInput.setValue(0.75) #set dwell time here
+        self.dwellTimeInput.setValue(0.5) #set dwell time here
         self.dwellTimeInput.valueChanged.connect(self.dwellTimeChanged.emit)
 
         self.mouseEnabledInput = QCheckBox('Mouse Control')
@@ -172,7 +172,7 @@ class TagWindow(QWidget):# Main window for the application
 
         # Load SoundFont file with error handling
         try:
-            soundfont_path = "/home/theo/Ukulele soundfiles/Soundfonts/Ukulele_little-scale.sf2"
+            soundfont_path = "/home/emanuel/Documents/ROS2_Workspaces/TheosDissertation/SoundFonts/UKU-SF.sf2"
             self.sfid = self.fs.sfload(soundfont_path)
             if self.sfid == -1:
                 raise FileNotFoundError(f"SoundFont file not found or could not be loaded: {soundfont_path}")
@@ -233,7 +233,7 @@ class TagWindow(QWidget):# Main window for the application
             if visible:
                 self.show()
             else:
-                self.showMaximized()
+                self.showFullScreen()
 
         self.updateMask()
 
@@ -269,12 +269,11 @@ class TagWindow(QWidget):# Main window for the application
 
         if self.settingsVisible:
             if self.clicked:
-                painter.setBrush(Qt.White)
+                painter.setBrush(Qt.white)# Weird box here set to white to ignore
             else:
                 painter.setBrush(Qt.white)
 
-            
-
+           
         for cornerIdx in range(4):
             cornerRect = self.getCornerRect(cornerIdx)
             if cornerIdx not in self.visibleMarkerIds:
@@ -325,9 +324,10 @@ class TagWindow(QWidget):# Main window for the application
         if self.is_playing or self.playback_progress > 0:
             progress_width = int((self.playback_progress / 100) * playback_width)
             painter.setBrush(QBrush(QColor(0, 255, 0)))  # Green for progress
-            painter.drawRect(playback_x, playback_y, progress_width, playback_height)   
+            painter.drawRect(playback_x, playback_y, progress_width, playback_height)  
 
-            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())         
+        painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())
+          
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -544,7 +544,7 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
         super().__init__()
 
         self.setApplicationDisplayName('Pupil Pointer')
-        self.mouseEnabled = False
+        self.mouseEnabled = True
 
         self.tagWindow = TagWindow()
 
