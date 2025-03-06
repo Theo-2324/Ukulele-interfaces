@@ -269,11 +269,11 @@ class TagWindow(QWidget):# Main window for the application
 
         if self.settingsVisible:
             if self.clicked:
-                painter.setBrush(Qt.red)
+                painter.setBrush(Qt.White)
             else:
                 painter.setBrush(Qt.white)
 
-            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())
+            
 
         for cornerIdx in range(4):
             cornerRect = self.getCornerRect(cornerIdx)
@@ -325,7 +325,9 @@ class TagWindow(QWidget):# Main window for the application
         if self.is_playing or self.playback_progress > 0:
             progress_width = int((self.playback_progress / 100) * playback_width)
             painter.setBrush(QBrush(QColor(0, 255, 0)))  # Green for progress
-            painter.drawRect(playback_x, playback_y, progress_width, playback_height)            
+            painter.drawRect(playback_x, playback_y, progress_width, playback_height)   
+
+            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())         
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
