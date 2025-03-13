@@ -318,7 +318,7 @@ class TagWindow(QWidget):# Main window for the application
         playback_height = 20  # Fixed thickness of the playback bar
 
         # Background of playback bar
-        painter.setBrush(QBrush(QColor(200, 200, 200))) # Light gray
+        painter.setBrush(QBrush(QColor(200, 200, 200,150))) # Light gray
         painter.drawRect(playback_x, playback_y, playback_width, playback_height)
 
         # Playback progress
