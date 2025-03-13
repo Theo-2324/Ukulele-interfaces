@@ -74,6 +74,7 @@ class TagWindow(QWidget):# Main window for the application
     dwellRadiusChanged = Signal(int)
     dwellTimeChanged = Signal(float)
     smoothingChanged = Signal(float)
+    
 
     def __init__(self):
         super().__init__()
@@ -194,25 +195,25 @@ class TagWindow(QWidget):# Main window for the application
         # Buttons
         self.play_button = QPushButton("Play", self)
         self.play_button.setFont(QFont("Arial", 12))
-        self.play_button.setFixedSize(200, 60) # Adjust button size
+        self.play_button.setFixedSize(200, 100) # Adjust button size
         self.play_button.clicked.connect(self.toggle_playback)
         self.play_button.setGeometry(450, 50, 200, 60) # Set position and size (x, y, width, height)
 
         self.record_button = QPushButton("Record", self)
         self.record_button.setFont(QFont("Arial", 12))
-        self.record_button.setFixedSize(200, 60) # Adjust button size
+        self.record_button.setFixedSize(200, 100) # Adjust button size
         self.record_button.clicked.connect(self.toggle_recording)
         self.record_button.setGeometry(700, 50, 200, 60) # Set position and size (x, y, width, height)
 
         self.volume_up_button = QPushButton("Volume +", self)
         self.volume_up_button.setFont(QFont("Arial", 12))
-        self.volume_up_button.setFixedSize(200, 60) # Adjust button size
+        self.volume_up_button.setFixedSize(200, 100) # Adjust button size
         self.volume_up_button.clicked.connect(self.increase_volume)
         self.volume_up_button.setGeometry(950, 50, 200, 60) # Set position and size (x, y, width, height)
 
         self.volume_down_button = QPushButton("Volume -", self)
         self.volume_down_button.setFont(QFont("Arial", 12))
-        self.volume_down_button.setFixedSize(200, 60) # Adjust button size
+        self.volume_down_button.setFixedSize(200, 100) # Adjust button size
         self.volume_down_button.clicked.connect(self.decrease_volume)
         self.volume_down_button.setGeometry(1200, 50, 200, 60) # Set position and size (x, y, width, height)
 
