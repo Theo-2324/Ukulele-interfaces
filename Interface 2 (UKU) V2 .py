@@ -10,11 +10,6 @@ from pupil_labs.real_time_screen_gaze import marker_generator
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
-import logging
-
-# Configure logging
-logging.basicConfig(filename='Test.log', level=logging.INFO, # change participant number here
-                    format='%(asctime)s - %(message)s')
 
 pyautogui.FAILSAFE = False
 
@@ -79,6 +74,7 @@ class TagWindow(QWidget):# Main window for the application
     dwellRadiusChanged = Signal(int)
     dwellTimeChanged = Signal(float)
     smoothingChanged = Signal(float)
+    
 
     def __init__(self):
         super().__init__()
@@ -111,17 +107,17 @@ class TagWindow(QWidget):# Main window for the application
 
         self.smoothingInput = QDoubleSpinBox()
         self.smoothingInput.setRange(0, 1.0)
-        self.smoothingInput.setValue(0.8) #set smoothing value here
+        self.smoothingInput.setValue(1) #set smoothing value here
         self.smoothingInput.valueChanged.connect(self.smoothingChanged.emit)
 
         self.dwellRadiusInput = QSpinBox()
         self.dwellRadiusInput.setRange(0, 512)
-        self.dwellRadiusInput.setValue(25) #set dwell radius here
+        self.dwellRadiusInput.setValue(35) #set dwell radius here
         self.dwellRadiusInput.valueChanged.connect(self.dwellRadiusChanged.emit)
 
         self.dwellTimeInput = QDoubleSpinBox()
         self.dwellTimeInput.setRange(0, 20)
-        self.dwellTimeInput.setValue(0.75) #set dwell time here
+        self.dwellTimeInput.setValue(0.5) #set dwell time here
         self.dwellTimeInput.valueChanged.connect(self.dwellTimeChanged.emit)
 
         self.mouseEnabledInput = QCheckBox('Mouse Control')
@@ -177,7 +173,7 @@ class TagWindow(QWidget):# Main window for the application
 
         # Load SoundFont file with error handling
         try:
-            soundfont_path = "/home/theo/Ukulele soundfiles/Soundfonts/Ukulele_little-scale.sf2"
+            soundfont_path = "/home/emanuel/Documents/ROS2_Workspaces/TheosDissertation/SoundFonts/UKU-SF.sf2"
             self.sfid = self.fs.sfload(soundfont_path)
             if self.sfid == -1:
                 raise FileNotFoundError(f"SoundFont file not found or could not be loaded: {soundfont_path}")
@@ -224,7 +220,7 @@ class TagWindow(QWidget):# Main window for the application
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.RightButton:
             self.setSettingsVisible(not self.settingsVisible)
-            logging.info(f"Right-click detected. Settings visibility toggled to {self.settingsVisible}")
+            
 
     def setSettingsVisible(self, visible):
         self.settingsVisible = visible
@@ -238,18 +234,16 @@ class TagWindow(QWidget):# Main window for the application
             if visible:
                 self.show()
             else:
-                self.showMaximized()
+                self.showFullScreen()
 
         self.updateMask()
 
     def setStatus(self, status):
         self.statusLabel.setText(status)
-        logging.info(f"Status updated: {status}")
 
     def setClicked(self, clicked):
         self.clicked = clicked
         self.repaint()
-        logging.info(f"Clicked state updated: {clicked}")
 
     def updatePoint(self, norm_x, norm_y):
         tagMargin = 0.1 * self.tagSizeInput.value()
@@ -269,7 +263,6 @@ class TagWindow(QWidget):# Main window for the application
     def showMarkerFeedback(self, markerIds):
         self.visibleMarkerIds = markerIds
         self.repaint()
-        logging.info(f"Marker feedback updated: {markerIds}")
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -277,12 +270,11 @@ class TagWindow(QWidget):# Main window for the application
 
         if self.settingsVisible:
             if self.clicked:
-                painter.setBrush(Qt.White)
+                painter.setBrush(Qt.white)# Weird box here set to white to ignore
             else:
                 painter.setBrush(Qt.white)
 
-            
-
+           
         for cornerIdx in range(4):
             cornerRect = self.getCornerRect(cornerIdx)
             if cornerIdx not in self.visibleMarkerIds:
@@ -296,9 +288,7 @@ class TagWindow(QWidget):# Main window for the application
         grid_height = self.rows * self.cell_size
         grid_x_offset = (self.width() - grid_width) // 2
         grid_y_offset = (self.height() - grid_height) // 2
-        
-# Draw the 4x8 grid for notes
-       
+        # Draw the 4x8 grid for notes
         painter.setBrush((QBrush(QColor(50, 25, 25))))  # Brown background for the grid
         for row in range(4):  # First 4 rows for the ukulele notes
             for col in range(self.columns):
@@ -307,15 +297,15 @@ class TagWindow(QWidget):# Main window for the application
                 painter.setPen(Qt.NoPen)
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
-# Draw note labels in each cell
-                painter.setPen(QPen(Qt.white, 2))
-                #painter.setFont(QFont("Arial", 12))
+
+                # Draw note labels in each cell
+                painter.setPen(QPen(QColor(255, 255, 255)))
+                painter.setFont(QFont("Arial", 12))
                 painter.drawText(
                     x + self.cell_size // 4,
                     y + self.cell_size // 2,
                     self.ukulele_notes[row][col],
-                    ) 
-
+                ) 
 
 # Draw vertical lines on the left and right of each cell
         painter.setPen(QPen(Qt.white, 2))  # Set pen color and width for the lines
@@ -327,24 +317,21 @@ class TagWindow(QWidget):# Main window for the application
                 painter.drawLine(x, y, x, y + self.cell_size)
                 # Right line
                 painter.drawLine(x + self.cell_size, y, x + self.cell_size, y + self.cell_size)
-
-
 # Draw a horizontal line across the center of the cells
-        painter.setPen(QPen(Qt.white, 5))
         for row in range(4):
+            painter.setPen(QPen(Qt.white, 6))  # Set pen color and width for the lines
             y = row * self.cell_size + grid_y_offset + self.cell_size // 2
             painter.drawLine(grid_x_offset, y, grid_x_offset + grid_width, y)
 
 
 
-
 # Highlight clicked cells
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(Qt.transparent)  # Semi-transparent red (QBrush(QColor(255, 0, 0, 128)))
         for cell in self.clicked_cells:
             row, col = cell
             x = col * self.cell_size + grid_x_offset
             y = row * self.cell_size + grid_y_offset
+            painter.setBrush(Qt.transparent)  # Semi-transparent red
+            painter.setPen(Qt.NoPen)
             painter.drawRect(x, y, self.cell_size, self.cell_size)
 
 # Draw the playback bar at the bottom
@@ -353,8 +340,9 @@ class TagWindow(QWidget):# Main window for the application
         playback_x = 255 # Position in relation to the left of the window
         playback_height = 20  # Fixed thickness of the playback bar
 
-        # Background of playback bar
-        painter.setBrush(QBrush(QColor(200, 200, 200))) # Light gray
+            # Background of playback bar
+        painter.setPen(QPen(Qt.black, 2))  # Black border
+        painter.setBrush(QBrush(QColor(200, 200, 200, 20))) # Light gray
         painter.drawRect(playback_x, playback_y, playback_width, playback_height)
 
         # Playback progress
@@ -363,7 +351,10 @@ class TagWindow(QWidget):# Main window for the application
             painter.setBrush(QBrush(QColor(0, 255, 0)))  # Green for progress
             painter.drawRect(playback_x, playback_y, progress_width, playback_height)   
 
-            painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())         
+        painter.drawEllipse(QPoint(*self.point), self.dwellRadiusInput.value(), self.dwellRadiusInput.value())  
+
+        painter.end()
+          
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -399,7 +390,6 @@ class TagWindow(QWidget):# Main window for the application
                 # Set a timer to remove the highlight after 1 second
                 QTimer.singleShot(1000, lambda: self.remove_cell(clicked_cell))
                 self.update()  # Redraw the grid
-                logging.info(f"Left-click detected at cell: Row {row}, Column {col}, Note: {note}")
 
     def play_note(self, note):
         if self.sfid is None:
@@ -415,14 +405,12 @@ class TagWindow(QWidget):# Main window for the application
         midi_note = note_to_midi.get(note, 60)  # Default to C4 if note not found
         self.fs.noteon(0, midi_note, self.volume)  # Play the note with current volume
         QTimer.singleShot(500, lambda: self.fs.noteoff(0, midi_note))  # Stop the note after 500ms
-        logging.info(f"Note played: {note} (MIDI: {midi_note})")
 
     def remove_cell(self, cell):
         # Remove the cell highlight and update the UI
         if cell in self.clicked_cells:
             self.clicked_cells.remove(cell)
             self.update()
-            logging.info(f"Cell highlight removed: {cell}")
 
     def toggle_playback(self):
         if self.is_playing:
@@ -437,13 +425,11 @@ class TagWindow(QWidget):# Main window for the application
             self.playback_progress = 0  # Reset progress
             self.playback_timer.start(50)  # Update every 50ms for smoother progress
             self.start_playback()  # Start playback from the beginning        
-            logging.info("Playback started.")
-
+    
     def start_playback(self):
         self.playback_start_time = QDateTime.currentDateTime().toMSecsSinceEpoch()
         self.current_playback_index = 0
         self.info_box.setText("Playback started.")
-        logging.info("Playback started from the beginning.")
 
     def update_playback(self):
         if self.is_playing and self.recorded_sequence:
@@ -484,7 +470,6 @@ class TagWindow(QWidget):# Main window for the application
         self.playback_timer.stop()
         self.playback_progress = 0
         self.info_box.setText("Playback stopped.")
-        logging.info("Playback stopped.")
         self.update()            
 
     def toggle_recording(self):
@@ -496,26 +481,22 @@ class TagWindow(QWidget):# Main window for the application
         else:
             self.info_box.setText("Recording stopped.")
         self.record_button.setText("Stop Recording" if self.is_recording else "Record")
-        logging.info(f"Recording toggled: {'Started' if self.is_recording else 'Stopped'}")
 
     def clear_recording(self):
         self.recorded_sequence = []  # Clear the recorded sequence
         self.info_box.setText("Recording cleared.")
-        logging.info("Recording cleared.")
 
     def increase_volume(self):
         """Increase volume by 10, capped at 127."""
         self.volume = min(self.volume + 10, 127)
         self.update_volume()
         self.info_box.setText(f"Volume increased to {self.volume}")
-        logging.info(f"Volume increased to {self.volume}")
 
     def decrease_volume(self):
         """Decrease volume by 10, capped at 0."""
         self.volume = max(self.volume - 10, 0)
         self.update_volume()
         self.info_box.setText(f"Volume decreased to {self.volume}")
-        logging.info(f"Volume decreased to {self.volume}")
 
     def update_volume(self):
         """Update the volume in fluidsynth."""
@@ -525,12 +506,10 @@ class TagWindow(QWidget):# Main window for the application
     def resizeEvent(self, event):
         self.updateMask()
         self.surfaceChanged.emit()
-        logging.info(f"Window resized to: {self.width()}x{self.height()}")
 
     def onTagSizeChanged(self, value):
         self.repaint()
         self.surfaceChanged.emit()
-        logging.info(f"Tag size changed to: {value}")
 
     def getMarkerSize(self):
         return self.tagSizeInput.value()
@@ -592,7 +571,7 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
         super().__init__()
 
         self.setApplicationDisplayName('Pupil Pointer')
-        self.mouseEnabled = False
+        self.mouseEnabled = True
 
         self.tagWindow = TagWindow()
 
@@ -619,7 +598,6 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
 
     def onSurfaceChanged(self):
         self.updateSurface()
-        logging.info("Surface changed.")
 
     def start(self):
         self.device = discover_one_device(max_search_duration_seconds=0.25)
@@ -636,7 +614,6 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
         self.updateSurface()
         self.pollTimer.start()
         self.firstPoll = True
-        logging.info(f"Connected to device: {self.device}")
 
     def updateSurface(self):
         if self.gazeMapper is None:
@@ -647,15 +624,12 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
             self.tagWindow.getMarkerVerts(),
             self.tagWindow.getSurfaceSize()
         )
-        logging.info("Surface updated.")
 
     def setMouseEnabled(self, enabled):
         self.mouseEnabled = enabled
-        logging.info(f"Mouse control toggled: {'Enabled' if enabled else 'Disabled'}")
 
     def setSmoothing(self, value):
         self.smoothing = value
-        logging.info(f"Smoothing value updated: {value}")
 
     def poll(self):
         frameAndGaze = self.device.receive_matched_scene_video_frame_and_gaze(timeout_seconds=1/15)
@@ -689,13 +663,11 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
                     self.tagWindow.setClicked(True)
                     if self.mouseEnabled:
                         pyautogui.click(x=dwellPosition[0], y=dwellPosition[1])
-                        logging.info(f"Mouse clicked at: {dwellPosition}")
                 else:
                     self.tagWindow.setClicked(False)
 
                 if self.mouseEnabled:
                     QCursor().setPos(mousePoint)
-                    logging.info(f"Mouse moved to: {mousePoint}")
 
     def exec(self):
         self.tagWindow.setStatus('Looking for a device...')
@@ -704,7 +676,6 @@ class PupilPointerApp(QApplication):# Also needed for pupil tracking application
         super().exec()
         if self.device is not None:
             self.device.close()
-            logging.info("Device closed.")
 
 def run():
     app = PupilPointerApp()
